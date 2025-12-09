@@ -39,6 +39,7 @@ with.
    :maxdepth: 1
 
    changes
+   build-deps
    programming-language
    coding-style
    maintainer-pgp-guide
