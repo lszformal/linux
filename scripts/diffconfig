@@ -11,7 +11,7 @@
 import sys, os
 
 def usage():
-    print("""Usage: diffconfig [-h] [-m] [<config1> <config2>]
+    print("""Usage: diffconfig [-h] [-m] [-s] [<config1> <config2>]
 
 Diffconfig is a simple utility for comparing two .config files.
 Using standard diff to compare .config files often includes extraneous and
@@ -23,6 +23,9 @@ Changed items show the old and new values on a single line.
 
 If -m is specified, then output will be in "merge" style, which has the
 changed and new values in kernel config option format.
+
+If -s is specified, a summary of added, removed, and changed options is
+printed after the detailed diff.
 
 If no config files are specified, .config and .config.old are used.
 
@@ -69,20 +72,28 @@ def show_diff():
     global merge_style
 
     # parse command line args
-    if ("-h" in sys.argv or "--help" in sys.argv):
+    args = sys.argv[1:]
+
+    if "-h" in args or "--help" in args:
         usage()
 
     merge_style = 0
-    if "-m" in sys.argv:
+    if "-m" in args:
         merge_style = 1
-        sys.argv.remove("-m")
+        args.remove("-m")
 
-    argc = len(sys.argv)
-    if not (argc==1 or argc == 3):
+    summary = 0
+    for summary_flag in ("-s", "--summary"):
+        while summary_flag in args:
+            summary = 1
+            args.remove(summary_flag)
+
+    argc = len(args)
+    if not (argc == 0 or argc == 2):
         print("Error: incorrect number of arguments or unrecognized option")
         usage()
 
-    if argc == 1:
+    if argc == 0:
         # if no filenames given, assume .config and .config.old
         build_dir=""
         if "KBUILD_OUTPUT" in os.environ:
@@ -90,8 +101,7 @@ def show_diff():
         configa_filename = build_dir + ".config.old"
         configb_filename = build_dir + ".config"
     else:
-        configa_filename = sys.argv[1]
-        configb_filename = sys.argv[2]
+        configa_filename, configb_filename = args
 
     try:
         a = readconfig(open(configa_filename))
@@ -107,6 +117,7 @@ def show_diff():
         if config not in b:
             old.append(config)
     old.sort()
+    old_count = len(old)
     for config in old:
         print_config("-", config, a[config], None)
         del a[config]
@@ -119,6 +130,7 @@ def show_diff():
         else:
             del b[config]
     changed.sort()
+    changed_count = len(changed)
     for config in changed:
         print_config("->", config, a[config], b[config])
         del b[config]
@@ -126,8 +138,15 @@ def show_diff():
     # now print items in b but not in a
     # (items from b that were in a were removed above)
     new = sorted(b.keys())
+    new_count = len(new)
     for config in new:
         print_config("+", config, None, b[config])
+
+    if summary:
+        print("\nSummary:")
+        print("  Removed: %d" % old_count)
+        print("  Changed: %d" % changed_count)
+        print("  Added:   %d" % new_count)
 
 def main():
     try:
