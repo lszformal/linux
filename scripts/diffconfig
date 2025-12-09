@@ -8,7 +8,9 @@
 # last worked on 2008 by Tim Bird
 #
 
-import sys, os
+import gzip
+import os
+import sys
 
 def usage():
     print("""Usage: diffconfig [-h] [-m] [-s] [<config1> <config2>]
@@ -17,6 +19,8 @@ Diffconfig is a simple utility for comparing two .config files.
 Using standard diff to compare .config files often includes extraneous and
 distracting information.  This utility produces sorted output with only the
 changes in configuration values between the two files.
+
+Both plain and gzip-compressed (.gz) configuration files are supported.
 
 Added and removed items are shown with a leading plus or minus, respectively.
 Changed items show the old and new values on a single line.
@@ -50,6 +54,13 @@ def readconfig(config_file):
         if line[-11:] == " is not set":
             d[line[9:-11]] = "n"
     return d
+
+
+def open_config(path):
+    if path.endswith(".gz"):
+        return gzip.open(path, "rt", encoding="utf-8")
+
+    return open(path)
 
 def print_config(op, config, value, new_value):
     global merge_style
@@ -104,11 +115,12 @@ def show_diff():
         configa_filename, configb_filename = args
 
     try:
-        a = readconfig(open(configa_filename))
-        b = readconfig(open(configb_filename))
-    except (IOError):
-        e = sys.exc_info()[1]
-        print("I/O error[%s]: %s\n" % (e.args[0],e.args[1]))
+        with open_config(configa_filename) as configa:
+            a = readconfig(configa)
+        with open_config(configb_filename) as configb:
+            b = readconfig(configb)
+    except OSError as e:
+        print("I/O error: %s\n" % e)
         usage()
 
     # print items in a but not b (accumulate, sort and print)
