@@ -18,6 +18,19 @@
 #ifndef __ASSEMBLY__
 
 /*
+ * C23 introduces "auto" as a standard way to define type-inferred
+ * variables, but "auto" has been a (useless) keyword even since K&R C,
+ * so it has always been "namespace reserved."
+ *
+ * Until at some future time we require C23 support, we need the gcc
+ * extension __auto_type, but there is no reason to put that elsewhere
+ * in the source code.
+ */
+#if __STDC_VERSION__ < 202311L
+# define auto __auto_type
+#endif
+
+/*
  * Skipped when running bindgen due to a libclang issue;
  * see https://github.com/rust-lang/rust-bindgen/issues/2244.
  */
@@ -535,11 +548,12 @@ struct ftrace_likely_data {
 
 /*
  * Clang has trouble with constraints with multiple
- * alternative behaviors (mainly "g" and "rm").
+ * alternative behaviors ("g" , "rm" and "=rm").
  */
 #ifndef ASM_INPUT_G
   #define ASM_INPUT_G "g"
   #define ASM_INPUT_RM "rm"
+  #define ASM_OUTPUT_RM "=rm"
 #endif
 
 #ifdef CONFIG_CC_HAS_ASM_INLINE

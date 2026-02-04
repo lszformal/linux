@@ -69,6 +69,7 @@ beyond).
    stable-kernel-rules
    management-style
    researcher-guidelines
+   conclave
 
 Dealing with bugs
 -----------------

@@ -49,6 +49,8 @@ static int add_string(const char *str, const char ***vals, int *count)
 		array = realloc(array, sizeof(char *) * size);
 		if (!array) {
 			fprintf(stderr, "Failed memory allocation\n");
+			free(*vals);
+			*vals = NULL;
 			return -1;
 		}
 		*vals = array;
@@ -210,6 +212,9 @@ static int process_tracepoints(bool mod, void *addr, const char *fname)
 	}
 
 	if (!tracepoint_data_sec) {
+		/* A module may reference only exported tracepoints */
+		if (mod)
+			return 0;
 		fprintf(stderr,	"no __tracepoint_strings in file: %s\n", fname);
 		return -1;
 	}
